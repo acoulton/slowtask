@@ -98,7 +98,7 @@ abstract class AndrewC_SlowTask
         {
             $this->_status->text = "Aborting";
             $this->_persist();
-            throw new SlowTask_Abort_Exception($message);
+            throw new SlowTask_Abort_Exception("User aborted");
         }
     }
 
