@@ -24,27 +24,23 @@ defined('SYSPATH') or die('No direct script access.');
  */
 abstract class AndrewC_SlowTask
 {
-    const SEND_FILE = 1;
-    const HTML = 2;
-    const REDIRECT = 3;
 
     protected $_id = null;
-    protected $_status_text = null;
-    protected $_progress = null;
-    protected $_progress_min = 0;
-    protected $_progress_max = 100;
-    protected $_log = array();
-    protected $_last_update = null;
-    protected $_heartbeat = null;
-    protected $_complete = null;
+    protected $_status = null;
+    protected static $_parent_thread = false;
 
-    protected $_config = array();
+    public static function is_parent_thread()
+    {
+        return self::$_parent_thread;
+    }
 
     public static function begin(Request $request, $status_text, $instance_config = array())
     {
         $config = Kohana::config('slowtask.instance');
+        SlowTask::$_parent_thread = true;
         // Create a SlowTask
         $task = new SlowTask($status_text, array_merge($config,$instance_config));
+
 
         // Get ready for the long haul
         set_time_limit(0);
@@ -53,7 +49,7 @@ abstract class AndrewC_SlowTask
 
         // Render the progress view as the body of the passed in request
         ob_start();
-        $task->render_progress();
+        echo $task->status()->as_html();
         $request->headers['Content-Length'] = ob_get_length();
         $request->headers['Connection'] = 'close';
         $request->send_headers();
@@ -65,12 +61,18 @@ abstract class AndrewC_SlowTask
         return $task;
     }
 
-    public static function query($id)
+    /**
+     *
+     * @param string $id
+     * @return SlowTask_Status
+     */
+    public static function query_status($id)
     {
         $data = Cache::instance()->get("slowtask-$id-data");
         if ($data)
         {
-            return unserialize($data);
+            $task = unserialize($data);
+            return $task->status();
         }
         return null;
     }
@@ -82,8 +84,9 @@ abstract class AndrewC_SlowTask
 
     public function __construct($status_text, $config)
     {
-        $this->_status_text = $status_text;
-        $this->_config = $config;
+        $this->_status = new SlowTask_Status($this);
+        $this->_status->text = $status_text;
+        $this->_status->config = $config;
         $this->_id = UUID::v4();
         $this->_persist();
     }
@@ -93,28 +96,37 @@ abstract class AndrewC_SlowTask
         // Check for user abort and throw an exception if set
         if (Cache::instance()->get("slowtask-$this->_id-abort"))
         {
-            $this->_status_text = "Aborting";
+            $this->_status->text = "Aborting";
             $this->_persist();
             throw new SlowTask_Abort_Exception($message);
         }
     }
 
-    protected function _persist($updated = true)
+    protected function _persist()
     {
-        if ($updated)
-        {
-            $this->_last_update = time();
-        }
-        $this->_heartbeat = time();
+        $this->_status->heartbeat = time();
         Cache::instance()->set("slowtask-$this->_id-data",serialize($this));
     }
 
+    /**
+     *
+     * @return SlowTask_Status
+     */
+    public function status()
+    {
+        return $this->_status;
+    }
+
+    public function id()
+    {
+        return $this->_id;
+    }
 
     public function progress_range($from,$to)
     {
         // Set the progress range
-        $this->_progress_min = $from;
-        $this->_progress_max = $to;
+        $this->_status->progress_min = $from;
+        $this->_status->progress_max = $to;
         $this->_persist();
         return $this;
     }
@@ -122,20 +134,20 @@ abstract class AndrewC_SlowTask
     public function heartbeat()
     {
         // Stop the timeout triggering
-        $this->_persist(false);
+        $this->_persist();
     }
 
-    public function progress($step = 1, $status = null)
+    public function progress($step = 1, $status_text = null)
     {
         // Set the progress
-        $this->_progress += $step;
-        if (($status === null) AND ($this->_status_text === null))
+        $this->_status->progress += $step;
+        if (($status_text === null) AND ($this->_status->text === null))
         {
-            $this->_status_text = 'Working';
+            $this->_status->text = 'Working';
         }
-        else if ($status !== null)
+        else if ($status_text !== null)
         {
-            $this->_status_text = $status;
+            $this->_status->text = $status_text;
         }
         $this->_persist();
         $this->_yield();
@@ -144,53 +156,14 @@ abstract class AndrewC_SlowTask
     public function log($message, $level = null)
     {
         // Log a message
-        $this->_log[] = array('level'=>$level,
-                              'message'=>$message);
+        $this->_status->add_log($level,$message);
         $this->_persist();
     }
 
-    public function complete($method, $data)
+    public function complete(SlowTask_Complete $complete_handler)
     {
-        // Store the info ready for sending back to the browser
-        switch ($method)
-        {
-            case SlowTask::SEND_FILE;
-            break;
-            case SlowTask::HTML;
-            break;
-            case SlowTask::REDIRECT;
-            break;
-        }
-        $this->_complete = array('method'=>$method, 'data'=>$data);
+        $this->_status->complete = $complete_handler;
         $this->_persist(true);
     }
 
-    public function percent()
-    {
-        $range = $this->_progress_max - $this->_progress_min;
-        if ($range == 0)
-        {
-            return "#Error#";
-        }
-        return round( 100 * ($this->_progress - $this->_progress_min) / $range);
-    }
-
-    public function render_progress($layout = true)
-    {
-        $progress = View::factory('slowtask/progress')
-                            ->set('percent',$this->percent())
-                            ->set('status_text', $this->_status_text)
-                            ->set('id', $this->_id)
-                            ->render();
-        if ( ! $layout)
-        {
-            echo $progress;
-        }
-        else
-        {
-            $template = View::factory('templates/staff.edbookfest');
-            $template->body =$progress;
-            echo $template->render();
-        }
-    }
 }
