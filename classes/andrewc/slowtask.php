@@ -137,7 +137,7 @@ abstract class AndrewC_SlowTask
         $this->_persist();
     }
 
-    public function progress($step = 1, $status_text = null)
+    public function progress($status_text = null, $step = 1)
     {
         // Set the progress
         $this->_status->progress += $step;
