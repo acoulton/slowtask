@@ -219,6 +219,8 @@ abstract class AndrewC_SlowTask
      * @param string $status_text An update to the status text shown to the user (eg filename currently processing)
      * @param int $step How many steps to advance the progress by.
      * @return SlowTask
+     *
+     */
     public function progress($status_text = null, $step = 1)
     {
         // Set the progress
