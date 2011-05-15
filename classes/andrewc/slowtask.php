@@ -59,26 +59,32 @@ abstract class AndrewC_SlowTask
     {
         $config = Kohana::config('slowtask.instance');
         SlowTask::$_parent_thread = true;
+
         // Create a SlowTask
         $task = new SlowTask($status_text, array_merge($config,$instance_config));
 
-
-        // Get ready for the long haul
-        set_time_limit(0);
-        ignore_user_abort(true);
-        session_write_close();
-
         // Render the progress view as the body of the passed in request
-        ob_start();
-        echo $task->status()->as_html();
-        $request->headers['Content-Length'] = ob_get_length();
+        $request->response = $task->status()->as_html();
+        $request->headers['Content-Length'] = strlen($request->response);
         $request->headers['Connection'] = 'close';
         $request->send_headers();
-        while (ob_get_level())
+
+        //@todo: Is there a better way to avoid running this code in PHPUnit?
+        if ( ! ($request instanceof SlowTask_Test_Request_Mock))
         {
-            ob_end_flush();
+            // Get ready for the long haul
+            set_time_limit(0);
+            ignore_user_abort(true);
+            session_write_close();
+
+            echo $request->response;
+
+            while (ob_get_level())
+            {
+                ob_end_flush();
+            }
+            flush();
         }
-        flush();
         return $task;
     }
 
