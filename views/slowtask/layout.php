@@ -46,7 +46,7 @@
     text-align: left;
 }
 </style>
-<?=HTML::script('assets/js/lib/prototype/prototype.js')?>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/prototype/1.7.0.0/prototype.js"></script>
 <title>Task progress</title>
 </head>
 <body>
