@@ -28,9 +28,9 @@ abstract class AndrewC_SlowTask
     protected $_id = null;
     protected $_status = null;
     protected static $_parent_thread = false;
-    
+
     /**
-     * Checks whether the current PHP thread is the parent (slow task) or child (progress reporting) 
+     * Checks whether the current PHP thread is the parent (slow task) or child (progress reporting)
      * thread for this task.
      * @return boolean
      */
@@ -76,6 +76,11 @@ abstract class AndrewC_SlowTask
             set_time_limit(0);
             ignore_user_abort(true);
             session_write_close();
+            if (function_exists('apache_setenv'))
+            {
+                // Disable mod_deflate in case it's about to stop the client seeing the response
+                apache_setenv('no-gzip',1);
+            }
 
             echo $request->response;
 
@@ -109,7 +114,7 @@ abstract class AndrewC_SlowTask
      * Signals a running task to abort, given its ID. This does not take effect immediately
      * but is detected whenever the running task calls [SlowTask::_yield()] - eg within
      * [SlowTask::progress()]
-     * 
+     *
      * @param string $id The UUID of the task to signal
      */
     public static function abort($id)
@@ -136,7 +141,7 @@ abstract class AndrewC_SlowTask
      * Internal method that checks for user abort and throws an exception if set.
      * This method is called by [SlowTask::progress()]. Task processing code should
      * therefore catch and handle a [SlowTask_Abort_Exception] to accommodate client abort.
-     * 
+     *
      * @throws SlowTask_Abort_Exception If the task has been signaled to abort
      */
     protected function _yield()
@@ -151,7 +156,7 @@ abstract class AndrewC_SlowTask
     }
 
     /**
-     * Persists the task and its status into the Cache, also setting the 
+     * Persists the task and its status into the Cache, also setting the
      * task heartbeat that is used on the client side to detect a dead process.
      */
     protected function _persist()
@@ -171,7 +176,7 @@ abstract class AndrewC_SlowTask
 
     /**
      * Gets the UUID of this task
-     * @return string 
+     * @return string
      */
     public function id()
     {
@@ -181,7 +186,7 @@ abstract class AndrewC_SlowTask
     /**
      * Sets the range of progress values from which a percentage completion should be calculated.
      * This is useful when you have a linear process with a known number of elements to handle.
-     * 
+     *
      *     $task = SlowTask::begin()
      *             ->progress_range(0, count($files));
      *     foreach ($files as $file)
@@ -218,9 +223,9 @@ abstract class AndrewC_SlowTask
     }
 
     /**
-     * Updates the progress, optionally setting a status text. This also calls [SlowTask::_yield()] and 
+     * Updates the progress, optionally setting a status text. This also calls [SlowTask::_yield()] and
      * may therefore throw an exception if the user has signaled the task to abort.
-     * 
+     *
      * @throws SlowTask_Abort_Exception If the user has singaled the task to abort.
      * @param string $status_text An update to the status text shown to the user (eg filename currently processing)
      * @param int $step How many steps to advance the progress by.
@@ -259,7 +264,7 @@ abstract class AndrewC_SlowTask
     }
 
     /**
-     * Marks the task as complete and signals the client to take some action to 
+     * Marks the task as complete and signals the client to take some action to
      * show new content or redirect to a new page. Accepts a SlowTask_Complete handler
      * object which implements the relevant action.
      *
