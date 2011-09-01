@@ -57,7 +57,7 @@ abstract class AndrewC_SlowTask
      */
     public static function begin(Request $request, $status_text, $instance_config = array())
     {
-        $config = Kohana::config('slowtask.instance');
+        $config = Kohana::$config->load('slowtask.instance');
         SlowTask::$_parent_thread = true;
 
         // Create a SlowTask
