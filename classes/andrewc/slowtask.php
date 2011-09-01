@@ -50,12 +50,12 @@ abstract class AndrewC_SlowTask
      * [!!] Also note that, to prevent deadlocking on native sessions, you also cannot write to the session
      * following this call.
      *
-     * @param Request $request The request that will be completed and receive the progress bar
+     * @param Response $response The response that will be completed and receive the progress bar
      * @param string $status_text The initial status message for the task
      * @param array $instance_config Any specific config to be merged with slowtask.instance
      * @return SlowTask
      */
-    public static function begin(Request $request, $status_text, $instance_config = array())
+    public static function begin(Response $response, $status_text, $instance_config = array())
     {
         $config = Kohana::config('slowtask.instance');
         SlowTask::$_parent_thread = true;
@@ -64,13 +64,13 @@ abstract class AndrewC_SlowTask
         $task = new SlowTask($status_text, array_merge($config,$instance_config));
 
         // Render the progress view as the body of the passed in request
-        $request->response = $task->status()->as_html();
-        $request->headers['Content-Length'] = strlen($request->response);
-        $request->headers['Connection'] = 'close';
-        $request->send_headers();
+        $response->body($task->status()->as_html());
+        $response->headers('Content-Length',$response->content_length());
+        $response->headers('Connection','close');
+        $response->send_headers();
 
         //@todo: Is there a better way to avoid running this code in PHPUnit?
-        if ( ! ($request instanceof SlowTask_Test_Request_Mock))
+        if ( ! ($response instanceof SlowTask_Test_Response_Mock))
         {
             // Get ready for the long haul
             set_time_limit(0);
@@ -82,7 +82,7 @@ abstract class AndrewC_SlowTask
                 apache_setenv('no-gzip',1);
             }
 
-            echo $request->response;
+            echo $response->body();
 
             while (ob_get_level())
             {

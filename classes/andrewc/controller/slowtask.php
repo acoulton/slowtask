@@ -27,8 +27,8 @@ abstract class AndrewC_Controller_SlowTask extends Controller
         }
 
         // Render the result back to the client
-        $this->request->headers['Content-type'] = 'application/json';
-        $this->request->response = $status->as_json();
+        $this->response->headers('Content-type', 'application/json');
+        $this->response->body($status->as_json());
     }
 
     public function action_abort()
@@ -37,8 +37,8 @@ abstract class AndrewC_Controller_SlowTask extends Controller
         SlowTask::abort($id);
         $status = SlowTask::query_status($id);
 
-        $this->request->headers['Content-type'] = 'application/json';
-        $this->request->response = $status->as_json();
+        $this->response->headers('Content-type','application/json');
+        $this->response->body($status->as_json());
     }
 
     public function action_complete_file()
@@ -48,7 +48,7 @@ abstract class AndrewC_Controller_SlowTask extends Controller
 
         if ($status->complete instanceof SlowTask_Complete_SendFile)
         {
-            $status->complete->send_file($this->request);
+            $status->complete->send_file($this->response);
         }
     }
 }
