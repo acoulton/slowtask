@@ -24,8 +24,8 @@ class SlowTask_Test extends Kohana_Unittest_TestCase
     public function test_begin_creates_task()
     {
         // Setup the mock request
-        $mock_request = $this->getMock('Request',array('send_headers'),
-                array(null),'SlowTask_Test_Request_Mock',false);
+        $mock_request = $this->getMock('Response',array('send_headers'),
+                array(null),'SlowTask_Test_Response_Mock',false);
         $mock_request->expects($this->once())
                 ->method('send_headers');
 
