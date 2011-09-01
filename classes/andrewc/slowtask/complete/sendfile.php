@@ -31,9 +31,9 @@ abstract class AndrewC_SlowTask_Complete_SendFile extends SlowTask_Complete
         return $this;
     }
 
-    public function send_file(Request $request)
+    public function send_file(Response $response)
     {
-        $request->send_file($this->_file, false, array(
+        $response->send_file($this->_file, false, array(
             'delete'=>$this->_unlink_on_complete
         ));
     }
