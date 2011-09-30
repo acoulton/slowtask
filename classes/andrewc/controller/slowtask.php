@@ -7,7 +7,7 @@ abstract class AndrewC_Controller_SlowTask extends Controller
         $id = $this->request->param('task_id');
 
         //@todo: Implement a non-ajax fallback
-        if ( ! Request::$is_ajax)
+        if ( ! $this->request->is_ajax())
         {
             throw new Kohana_Exception('not ajax');
         }
