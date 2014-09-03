@@ -27,7 +27,7 @@
     "bin": [],
     "extra": {
         "branch-alias": {
-            "dev-master": "3.3.x-dev"
+            "dev-3.3/master": "3.3.x-dev"
         },
         "installer-paths": {
             "vendor/{$vendor}/{$name}": ["type:kohana-module"]
