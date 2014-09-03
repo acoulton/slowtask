@@ -1,6 +1,6 @@
 <?php
 defined('SYSPATH') or die('No direct script access.');
-abstract class AndrewC_Controller_SlowTask extends Controller
+abstract class AndrewC_Controller_Slowtask extends Controller
 {
     public function action_progress()
     {
